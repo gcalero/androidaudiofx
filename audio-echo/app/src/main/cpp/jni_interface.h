@@ -21,7 +21,8 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
-
+JNIEXPORT void JNICALL Java_com_google_sample_echo_MainActivity_queryEngineFeatures (
+        JNIEnv *env, jclass type);
 JNIEXPORT void JNICALL Java_com_google_sample_echo_MainActivity_createSLEngine(
     JNIEnv *env, jclass, jint, jint, jlong delayInMs, jfloat decay);
 JNIEXPORT void JNICALL Java_com_google_sample_echo_MainActivity_deleteSLEngine(
@@ -32,10 +33,36 @@ Java_com_google_sample_echo_MainActivity_createSLBufferQueueAudioPlayer(
 JNIEXPORT void JNICALL
 Java_com_google_sample_echo_MainActivity_deleteSLBufferQueueAudioPlayer(
     JNIEnv *env, jclass type);
-
 JNIEXPORT jboolean JNICALL
 Java_com_google_sample_echo_MainActivity_createAudioRecorder(JNIEnv *env,
-                                                             jclass type);
+                                                             jclass type,
+                                                             jboolean aec,
+                                                             jboolean ns);
+JNIEXPORT jboolean JNICALL
+Java_com_google_sample_echo_MainActivity_isAecSupported(JNIEnv *env,
+                                                      jclass type);
+
+JNIEXPORT jboolean JNICALL
+Java_com_google_sample_echo_MainActivity_isNsSupported(JNIEnv *env,
+                                                     jclass type);
+
+
+JNIEXPORT jboolean JNICALL
+Java_com_google_sample_echo_MainActivity_isAecEnabled(JNIEnv *env,
+                                                     jclass type);
+
+JNIEXPORT jboolean JNICALL
+Java_com_google_sample_echo_MainActivity_isNsEnabled(JNIEnv *env,
+                                                    jclass type);
+
+JNIEXPORT void JNICALL
+Java_com_google_sample_echo_MainActivity_setAecEnabled(JNIEnv *env,
+                                                   jclass type,
+                                                   jboolean enable);
+JNIEXPORT void JNICALL
+Java_com_google_sample_echo_MainActivity_setNsEnabled(JNIEnv *env,
+                                                  jclass type,
+                                                  jboolean enable);
 JNIEXPORT void JNICALL
 Java_com_google_sample_echo_MainActivity_deleteAudioRecorder(JNIEnv *env,
                                                              jclass type);

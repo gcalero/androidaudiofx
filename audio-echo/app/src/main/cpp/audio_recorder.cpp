@@ -17,6 +17,10 @@
 #include <cstring>
 #include <cstdlib>
 #include "audio_recorder.h"
+#define MAX_NUMBER_INTERFACES 1
+#define FX_NAME_LENGTH 64
+#define GUID_DISPLAY_LENGTH 37
+
 /*
  * bqRecorderCallback(): called for every buffer is full;
  *                       pass directly to handler
@@ -54,8 +58,11 @@ void AudioRecorder::ProcessSLCallback(SLAndroidSimpleBufferQueueItf bq) {
   }
 }
 
-AudioRecorder::AudioRecorder(SampleFormat *sampleFormat, SLEngineItf slEngine)
-    : freeQueue_(nullptr),
+
+AudioRecorder::AudioRecorder(SampleFormat *sampleFormat, SLEngineItf slEngine, SLObjectItf slEngineObj, bool aes, bool ns)
+    : aecItf_(nullptr),
+      nsItf_(nullptr),
+      freeQueue_(nullptr),
       recQueue_(nullptr),
       devShadowQueue_(nullptr),
       callback_(nullptr) {
@@ -76,31 +83,55 @@ AudioRecorder::AudioRecorder(SampleFormat *sampleFormat, SLEngineItf slEngine)
 
   SLDataSink audioSnk = {&loc_bq, &format_pcm};
 
+
   // create audio recorder
   // (requires the RECORD_AUDIO permission)
-  const SLInterfaceID id[2] = {SL_IID_ANDROIDSIMPLEBUFFERQUEUE,
-                               SL_IID_ANDROIDCONFIGURATION};
-  const SLboolean req[2] = {SL_BOOLEAN_TRUE, SL_BOOLEAN_TRUE};
+  SLInterfaceID id[4] = {SL_IID_ANDROIDSIMPLEBUFFERQUEUE, SL_IID_ANDROIDCONFIGURATION, AEC, NS};
+
+  SLboolean req[4] = { SL_BOOLEAN_TRUE, SL_BOOLEAN_TRUE, aes? SL_BOOLEAN_TRUE:SL_BOOLEAN_FALSE, ns? SL_BOOLEAN_TRUE : SL_BOOLEAN_FALSE};
+    char ifaceString[4][GUID_DISPLAY_LENGTH];
+    guidToString(id[0], ifaceString[0]);
+    guidToString(id[1], ifaceString[1]);
+    guidToString(id[2], ifaceString[2]);
+    guidToString(id[3], ifaceString[3]);
+
+    LOGD("[OPENSL ES] CreateAudioRecorder: %s:%s - %s:%s - %s:%s - %s:%s", ifaceString[0], req[0]==SL_BOOLEAN_TRUE?"true":"false",
+         ifaceString[1], req[1]!=SL_BOOLEAN_FALSE?"true":"false",
+         ifaceString[2], req[2]==SL_BOOLEAN_TRUE?"true":"false",
+         ifaceString[3], req[3]==SL_BOOLEAN_TRUE?"true":"false"
+    );
   result = (*slEngine)->CreateAudioRecorder(
-      slEngine, &recObjectItf_, &audioSrc, &audioSnk,
-      sizeof(id) / sizeof(id[0]), id, req);
+    slEngine, &recObjectItf_, &audioSrc, &audioSnk,
+    4, id, req);
   SLASSERT(result);
 
-  // Configure the voice recognition preset which has no
+    // Configure the voice recognition preset which has no
   // signal processing for lower latency.
   SLAndroidConfigurationItf inputConfig;
   result = (*recObjectItf_)
                ->GetInterface(recObjectItf_, SL_IID_ANDROIDCONFIGURATION,
                               &inputConfig);
   if (SL_RESULT_SUCCESS == result) {
-    SLuint32 presetValue = SL_ANDROID_RECORDING_PRESET_VOICE_RECOGNITION;
+    SLuint32 presetValue = SL_ANDROID_RECORDING_PRESET_GENERIC;
     (*inputConfig)
         ->SetConfiguration(inputConfig, SL_ANDROID_KEY_RECORDING_PRESET,
                            &presetValue, sizeof(SLuint32));
   }
   result = (*recObjectItf_)->Realize(recObjectItf_, SL_BOOLEAN_FALSE);
   SLASSERT(result);
-  result =
+
+    result = (*recObjectItf_)
+            ->GetInterface(recObjectItf_, AEC, &aecItf_);
+    if (SL_RESULT_SUCCESS != result) {
+        LOGE("Could not get AEC interface %d", result);
+    }
+
+    result = (*recObjectItf_)->GetInterface(recObjectItf_, NS, &nsItf_);
+    if (SL_RESULT_SUCCESS != result) {
+        LOGE("Could not get NS interface %d", result);
+    }
+
+    result =
       (*recObjectItf_)->GetInterface(recObjectItf_, SL_IID_RECORD, &recItf_);
   SLASSERT(result);
 
@@ -120,6 +151,48 @@ AudioRecorder::AudioRecorder(SampleFormat *sampleFormat, SLEngineItf slEngine)
   recLog_ = new AndroidLog(name);
 #endif
 }
+
+bool AudioRecorder::isAecEnabled() {
+    if (!aecItf_) {
+        return false;
+    }
+    SLboolean aecEnabled;
+    (*aecItf_)->IsEnabled(aecItf_, AEC, &aecEnabled);
+    return aecEnabled;
+}
+
+bool AudioRecorder::isAecSupported() {
+    return aecItf_ != nullptr;
+}
+
+bool AudioRecorder::isNsSupported() {
+    return nsItf_ != nullptr;
+}
+
+bool AudioRecorder::isNsEnabled() {
+    // get the android effect interface
+    if (nsItf_) {
+        SLboolean nsEnabled;
+        (*nsItf_)->IsEnabled(nsItf_, NS, &nsEnabled);
+        return nsEnabled;
+    }
+    return false;
+}
+
+void AudioRecorder::setAecEnabled(bool enable) {
+    if (aecItf_) {
+        (*aecItf_)->SetEnabled(aecItf_, AEC,
+                                     enable ? SL_BOOLEAN_TRUE : SL_BOOLEAN_FALSE);
+    }
+}
+
+void AudioRecorder::setNsEnabled(bool enable) {
+    if (nsItf_) {
+        (*nsItf_)->SetEnabled(nsItf_, NS,
+                                     enable ? SL_BOOLEAN_TRUE : SL_BOOLEAN_FALSE);
+    }
+}
+
 
 SLboolean AudioRecorder::Start(void) {
   if (!freeQueue_ || !recQueue_ || !devShadowQueue_) {

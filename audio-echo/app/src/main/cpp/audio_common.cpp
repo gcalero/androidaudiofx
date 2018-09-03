@@ -64,3 +64,20 @@ void ConvertToSLSampleFormat(SLAndroidDataFormat_PCM_EX* pFormat,
       assert(0);
   }
 }
+
+void guidToString(const SLInterfaceID guid, char *str) {
+  if ((NULL == guid) || (NULL == str)) {
+    return;
+  }
+  snprintf(str, GUID_DISPLAY_LENGTH, "%08lx-%04x-%04x-%04x-%02x%02x%02x%02x%02x%02x",
+           (unsigned long) guid->time_low,
+           guid->time_mid,
+           guid->time_hi_and_version,
+           guid->clock_seq,
+           guid->node[0],
+           guid->node[1],
+           guid->node[2],
+           guid->node[3],
+           guid->node[4],
+           guid->node[5]);
+}

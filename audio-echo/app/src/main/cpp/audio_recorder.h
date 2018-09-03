@@ -28,6 +28,9 @@ class AudioRecorder {
   SLRecordItf recItf_;
   SLAndroidSimpleBufferQueueItf recBufQueueItf_;
 
+  SLAndroidEffectItf aecItf_;
+  SLAndroidEffectItf nsItf_;
+
   SampleFormat sampleInfo_;
   AudioQueue *freeQueue_;       // user
   AudioQueue *recQueue_;        // user
@@ -38,7 +41,7 @@ class AudioRecorder {
   void *ctx_;
 
  public:
-  explicit AudioRecorder(SampleFormat *, SLEngineItf engineEngine);
+  explicit AudioRecorder(SampleFormat *, SLEngineItf engineEngine, SLObjectItf pItf_, bool aec, bool ns);
   ~AudioRecorder();
   SLboolean Start(void);
   SLboolean Stop(void);
@@ -46,10 +49,26 @@ class AudioRecorder {
   void ProcessSLCallback(SLAndroidSimpleBufferQueueItf bq);
   void RegisterCallback(ENGINE_CALLBACK cb, void *ctx);
   int32_t dbgGetDevBufCount(void);
+  bool isAecEnabled();
+  bool isNsEnabled();
+  void setAecEnabled(bool enable);
+  void setNsEnabled(bool enable);
+
+  bool isAecSupported();
+  bool isNsSupported();
 
 #ifdef ENABLE_LOG
   AndroidLog *recLog_;
 #endif
+
+private:
+
+    SLInterfaceID_ AEC_ = { 0x7b491460, 0x8d4d, 0x11e0, 0xbd61, { 0x00, 0x02, 0xa5, 0xd5, 0xc5, 0x1b} };
+    SLInterfaceID_ NS_ = { 0x58b4b260, 0x8e06, 0x11e0, 0xaa8e, { 0x00, 0x02, 0xa5, 0xd5, 0xc5, 0x1b} };
+
+    SLInterfaceID AEC = &AEC_;
+    SLInterfaceID NS = &NS_;
+
 };
 
 #endif  // NATIVE_AUDIO_AUDIO_RECORDER_H

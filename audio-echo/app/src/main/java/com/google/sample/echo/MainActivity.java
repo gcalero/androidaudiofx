@@ -23,14 +23,17 @@ import android.content.pm.PackageManager;
 import android.media.AudioFormat;
 import android.media.AudioManager;
 import android.media.AudioRecord;
+import android.media.audiofx.AcousticEchoCanceler;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
 import android.support.v4.app.ActivityCompat;
+import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.widget.Button;
 import android.widget.SeekBar;
+import android.widget.Switch;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -46,6 +49,8 @@ public class MainActivity extends Activity
     private SeekBar delaySeekBar;
     private TextView curDelayTV;
     private int echoDelayProgress;
+    private Switch aecSwitch;
+    private Switch nsSwitch;
 
     private SeekBar decaySeekBar;
     private TextView curDecayTV;
@@ -54,9 +59,11 @@ public class MainActivity extends Activity
     private boolean supportRecording;
     private Boolean isPlaying = false;
 
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+
         setContentView(R.layout.activity_main);
         controlButton = (Button)findViewById((R.id.capture_control_button));
         statusView = (TextView)findViewById(R.id.statusView);
@@ -64,6 +71,9 @@ public class MainActivity extends Activity
 
         delaySeekBar = (SeekBar)findViewById(R.id.delaySeekBar);
         curDelayTV = (TextView)findViewById(R.id.curDelay);
+        aecSwitch = (Switch) findViewById(R.id.aecSwitch);
+        nsSwitch = (Switch) findViewById(R.id.nsSwitch);
+
         echoDelayProgress = delaySeekBar.getProgress() * 1000 / delaySeekBar.getMax();
         delaySeekBar.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
             @Override
@@ -119,12 +129,15 @@ public class MainActivity extends Activity
         updateNativeAudioUI();
 
         if (supportRecording) {
+            queryEngineFeatures();
             createSLEngine(
                     Integer.parseInt(nativeSampleRate),
                     Integer.parseInt(nativeSampleBufSize),
                     echoDelayProgress,
                     echoDecayProgress);
         }
+        Log.d("[OPENSL ES] " , "AcousticEchoCanceler.isAvailable() " + AcousticEchoCanceler.isAvailable());
+
     }
 
     private void setSeekBarPromptPosition(SeekBar seekBar, TextView label) {
@@ -176,13 +189,14 @@ public class MainActivity extends Activity
                 statusView.setText(getString(R.string.player_error_msg));
                 return;
             }
-            if(!createAudioRecorder()) {
+            if(!createAudioRecorder(aecSwitch.isChecked(), nsSwitch.isChecked())) {
                 deleteSLBufferQueueAudioPlayer();
                 statusView.setText(getString(R.string.recorder_error_msg));
                 return;
             }
             startPlay();   // startPlay() triggers startRecording()
-            statusView.setText(getString(R.string.echoing_status_msg));
+            updateStatus(null);
+
         } else {
             stopPlay();  // stopPlay() triggers stopRecording()
             updateNativeAudioUI();
@@ -193,6 +207,12 @@ public class MainActivity extends Activity
         controlButton.setText(getString(isPlaying ?
                 R.string.cmd_stop_echo: R.string.cmd_start_echo));
     }
+
+    public void updateStatus(View view) {
+        Log.d("[OPENSL ES]", "isAecSupported(): " + isAecSupported());
+        statusView.setText(getString(R.string.echoing_status_msg) + "\nAEC: " + (isAecSupported()? (isAecEnabled() ? "enabled": "disabled") :  "unsupported" )+ "\nNS: " + (isNsSupported()? (isNsEnabled()? "enabled" : "disabled") : "unsupported"));
+    }
+
     public void onEchoClick(View view) {
         if (ActivityCompat.checkSelfPermission(this, Manifest.permission.RECORD_AUDIO) !=
                                                PackageManager.PERMISSION_GRANTED) {
@@ -287,18 +307,35 @@ public class MainActivity extends Activity
         System.loadLibrary("echo");
     }
 
+    static native void queryEngineFeatures();
     /*
      * jni function declarations
      */
     static native void createSLEngine(int rate, int framesPerBuf,
                                       long delayInMs, float decay);
+    static native void setAecEnabled(boolean enable);
+    static native void setNsEnabled(boolean enable);
+    static native boolean isAecEnabled();
+    static native boolean isNsEnabled();
+    static native boolean isAecSupported();
+    static native boolean isNsSupported();
     static native void deleteSLEngine();
     static native boolean configureEcho(int delayInMs, float decay);
     static native boolean createSLBufferQueueAudioPlayer();
     static native void deleteSLBufferQueueAudioPlayer();
 
-    static native boolean createAudioRecorder();
+    static native boolean createAudioRecorder(boolean aec, boolean ns);
     static native void deleteAudioRecorder();
     static native void startPlay();
     static native void stopPlay();
+
+    public void aecSwitch(View view) {
+        setAecEnabled(aecSwitch.isChecked());
+        updateStatus(null);
+    }
+
+    public void nsSwitch(View view) {
+        setNsEnabled(nsSwitch.isChecked());
+        updateStatus(null);
+    }
 }

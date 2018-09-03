@@ -16,6 +16,9 @@
 
 #ifndef NATIVE_AUDIO_AUDIO_COMMON_H
 #define NATIVE_AUDIO_AUDIO_COMMON_H
+#define MAX_NUMBER_INTERFACES 1
+#define FX_NAME_LENGTH 64
+#define GUID_DISPLAY_LENGTH 37
 
 #include <SLES/OpenSLES.h>
 #include <SLES/OpenSLES_Android.h>
@@ -33,8 +36,8 @@
  * Sample Buffer Controls...
  */
 #define RECORD_DEVICE_KICKSTART_BUF_COUNT 2
-#define PLAY_KICKSTART_BUFFER_COUNT 3
-#define DEVICE_SHADOW_BUFFER_QUEUE_LEN 4
+#define PLAY_KICKSTART_BUFFER_COUNT 2
+#define DEVICE_SHADOW_BUFFER_QUEUE_LEN 2
 #define BUF_COUNT 16
 
 struct SampleFormat {
@@ -75,5 +78,7 @@ typedef bool (*ENGINE_CALLBACK)(void* pCTX, uint32_t msg, void* pData);
  * flag to enable file dumping
  */
 // #define ENABLE_LOG  1
+
+void guidToString(const SLInterfaceID guid, char *str);
 
 #endif  // NATIVE_AUDIO_AUDIO_COMMON_H

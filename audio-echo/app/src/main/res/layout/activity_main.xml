@@ -76,6 +76,24 @@
         android:max="10"
         android:progress="1" />
 
+    <Switch
+        android:id="@+id/aecSwitch"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignStart="@+id/minDelayLabel"
+        android:layout_below="@+id/minDecayLabel"
+        android:onClick="aecSwitch"
+        android:text="AEC" />
+
+    <Switch
+        android:id="@+id/nsSwitch"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignStart="@+id/minDelayLabel"
+        android:layout_below="@+id/aecSwitch"
+        android:onClick="nsSwitch"
+        android:text="NS" />
+
     <Button
         android:id="@+id/capture_control_button"
         android:layout_width="wrap_content"
@@ -103,7 +121,9 @@
         android:lines="3"
         android:id="@+id/statusView"
         android:layout_centerHorizontal="true"
-        android:layout_alignParentBottom="true"/>
+        android:layout_alignParentBottom="true"
+        android:onClick="updateStatus"
+        />
 
 </RelativeLayout>
 

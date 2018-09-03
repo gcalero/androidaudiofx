@@ -49,6 +49,40 @@ static EchoAudioEngine engine;
 
 bool EngineService(void *ctx, uint32_t msg, void *data);
 
+
+JNIEXPORT void JNICALL Java_com_google_sample_echo_MainActivity_queryEngineFeatures (
+    JNIEnv *env, jclass type) {
+
+    SLuint32 supportedInterface;
+    SLresult result;
+    result = slQueryNumSupportedEngineInterfaces(&supportedInterface);
+    SLASSERT(result);
+
+    char ifaceString[GUID_DISPLAY_LENGTH];
+    SLInterfaceID pInterfaceId;
+    for (SLuint32 i = 0 ; i < supportedInterface ; i++ ) {
+
+        result = slQuerySupportedEngineInterfaces(i, &pInterfaceId);
+        SLASSERT(result);
+
+        guidToString(pInterfaceId, ifaceString);
+
+
+        LOGD("[OPENSL ES] Engine interface supported: %s", ifaceString);
+    }
+
+    SLInterfaceID interfaceIDs[50] = {SL_IID_NULL , SL_IID_OBJECT , SL_IID_AUDIOIODEVICECAPABILITIES , SL_IID_LED , SL_IID_VIBRA , SL_IID_METADATAEXTRACTION , SL_IID_METADATATRAVERSAL , SL_IID_DYNAMICSOURCE , SL_IID_OUTPUTMIX , SL_IID_PLAY , SL_IID_PREFETCHSTATUS , SL_IID_PLAYBACKRATE , SL_IID_SEEK , SL_IID_RECORD , SL_IID_EQUALIZER , SL_IID_VOLUME , SL_IID_DEVICEVOLUME , SL_IID_BUFFERQUEUE , SL_IID_PRESETREVERB , SL_IID_ENVIRONMENTALREVERB , SL_IID_EFFECTSEND , SL_IID_3DGROUPING , SL_IID_3DCOMMIT , SL_IID_3DLOCATION , SL_IID_3DDOPPLER , SL_IID_3DSOURCE , SL_IID_3DMACROSCOPIC , SL_IID_MUTESOLO , SL_IID_DYNAMICINTERFACEMANAGEMENT , SL_IID_MIDIMESSAGE , SL_IID_MIDIMUTESOLO , SL_IID_MIDITEMPO , SL_IID_MIDITIME , SL_IID_AUDIODECODERCAPABILITIES , SL_IID_AUDIOENCODERCAPABILITIES , SL_IID_AUDIOENCODER , SL_IID_BASSBOOST , SL_IID_PITCH , SL_IID_RATEPITCH , SL_IID_VIRTUALIZER , SL_IID_VISUALIZATION , SL_IID_ENGINE , SL_IID_ENGINECAPABILITIES , SL_IID_THREADSYNC , SL_IID_ANDROIDEFFECT , SL_IID_ANDROIDEFFECTSEND , SL_IID_ANDROIDEFFECTCAPABILITIES , SL_IID_ANDROIDCONFIGURATION , SL_IID_ANDROIDSIMPLEBUFFERQUEUE , SL_IID_ANDROIDBUFFERQUEUESOURCE};
+    const char *interfaceNames[50]=  {"SL_IID_NULL","SL_IID_OBJECT","SL_IID_AUDIOIODEVICECAPABILITIES","SL_IID_LED","SL_IID_VIBRA","SL_IID_METADATAEXTRACTION","SL_IID_METADATATRAVERSAL","SL_IID_DYNAMICSOURCE","SL_IID_OUTPUTMIX","SL_IID_PLAY","SL_IID_PREFETCHSTATUS","SL_IID_PLAYBACKRATE","SL_IID_SEEK","SL_IID_RECORD","SL_IID_EQUALIZER","SL_IID_VOLUME","SL_IID_DEVICEVOLUME","SL_IID_BUFFERQUEUE","SL_IID_PRESETREVERB","SL_IID_ENVIRONMENTALREVERB","SL_IID_EFFECTSEND","SL_IID_3DGROUPING","SL_IID_3DCOMMIT","SL_IID_3DLOCATION","SL_IID_3DDOPPLER","SL_IID_3DSOURCE","SL_IID_3DMACROSCOPIC","SL_IID_MUTESOLO","SL_IID_DYNAMICINTERFACEMANAGEMENT","SL_IID_MIDIMESSAGE","SL_IID_MIDIMUTESOLO","SL_IID_MIDITEMPO","SL_IID_MIDITIME","SL_IID_AUDIODECODERCAPABILITIES","SL_IID_AUDIOENCODERCAPABILITIES","SL_IID_AUDIOENCODER","SL_IID_BASSBOOST","SL_IID_PITCH","SL_IID_RATEPITCH","SL_IID_VIRTUALIZER","SL_IID_VISUALIZATION","SL_IID_ENGINE","SL_IID_ENGINECAPABILITIES","SL_IID_THREADSYNC","SL_IID_ANDROIDEFFECT","SL_IID_ANDROIDEFFECTSEND","SL_IID_ANDROIDEFFECTCAPABILITIES", "SL_IID_ANDROIDCONFIGURATION" , "SL_IID_ANDROIDSIMPLEBUFFERQUEUE" , "SL_IID_ANDROIDBUFFERQUEUESOURCE"};
+
+    for (int i=0; i<50; i++) {
+        guidToString(interfaceIDs[i], ifaceString);
+        LOGD("[OPENSL ES] %s = %s", interfaceNames[i], ifaceString);
+
+    }
+
+
+
+}
 JNIEXPORT void JNICALL Java_com_google_sample_echo_MainActivity_createSLEngine(
     JNIEnv *env, jclass type, jint sampleRate, jint framesPerBuf,
     jlong delayInMs, jfloat decay) {
@@ -60,8 +94,8 @@ JNIEXPORT void JNICALL Java_com_google_sample_echo_MainActivity_createSLEngine(
   engine.sampleChannels_ = AUDIO_SAMPLE_CHANNELS;
   engine.bitsPerSample_ = SL_PCMSAMPLEFORMAT_FIXED_16;
 
-  result = slCreateEngine(&engine.slEngineObj_, 0, NULL, 0, NULL, NULL);
-  SLASSERT(result);
+    result = slCreateEngine(&engine.slEngineObj_, 0, NULL, 0, NULL, NULL);
+    SLASSERT(result);
 
   result =
       (*engine.slEngineObj_)->Realize(engine.slEngineObj_, SL_BOOLEAN_FALSE);
@@ -72,6 +106,34 @@ JNIEXPORT void JNICALL Java_com_google_sample_echo_MainActivity_createSLEngine(
                               &engine.slEngineItf_);
   SLASSERT(result);
 
+/*
+SLuint32 numRecorderSupportedInterfaces;
+result = (*engine.slEngineItf_)->QueryNumSupportedInterfaces(engine.slEngineItf_, SL_OBJECTID_AUDIORECORDER, &numRecorderSupportedInterfaces);
+SLASSERT(result);
+
+  SLInterfaceID recorderInterfaceID;
+  char ifaceString[GUID_DISPLAY_LENGTH];
+
+  for (SLuint32 i = 0 ; i < numRecorderSupportedInterfaces ; i++) {
+    (*engine.slEngineItf_)->QuerySupportedInterfaces(engine.slEngineItf_, SL_OBJECTID_AUDIORECORDER, i, &recorderInterfaceID);
+
+    guidToString(recorderInterfaceID, ifaceString);
+    LOGD("[OPENSL ES] AUDIO RECORDER supported interface: %s", ifaceString);
+  }
+
+
+    SLuint32 numPlayerSupportedInterfaces;
+    result = (*engine.slEngineItf_)->QueryNumSupportedInterfaces(engine.slEngineItf_, SL_OBJECTID_AUDIOPLAYER, &numPlayerSupportedInterfaces);
+    SLASSERT(result);
+
+    SLInterfaceID playerInterfaceID;
+    for (SLuint32 i = 0 ; i < numPlayerSupportedInterfaces ; i++) {
+        (*engine.slEngineItf_)->QuerySupportedInterfaces(engine.slEngineItf_, SL_OBJECTID_AUDIOPLAYER, i, &playerInterfaceID);
+
+        guidToString(playerInterfaceID, ifaceString);
+        LOGD("[OPENSL ES] AUDIO PLAYER supported interface: %s", ifaceString);
+    }
+*/
   // compute the RECOMMENDED fast audio buffer size:
   //   the lower latency required
   //     *) the smaller the buffer should be (adjust it here) AND
@@ -128,6 +190,9 @@ Java_com_google_sample_echo_MainActivity_createSLBufferQueueAudioPlayer(
   assert(engine.player_);
   if (engine.player_ == nullptr) return JNI_FALSE;
 
+  LOGD("AUDIO-LOG - REC BUFF QUEUE %d", engine.recBufQueue_->size());
+  LOGD("AUDIO-LOG - FREE BUFF QUEUE %d", engine.freeBufQueue_->size());
+
   engine.player_->SetBufQueue(engine.recBufQueue_, engine.freeBufQueue_);
   engine.player_->RegisterCallback(EngineService, (void *)&engine);
 
@@ -145,7 +210,9 @@ Java_com_google_sample_echo_MainActivity_deleteSLBufferQueueAudioPlayer(
 
 JNIEXPORT jboolean JNICALL
 Java_com_google_sample_echo_MainActivity_createAudioRecorder(JNIEnv *env,
-                                                             jclass type) {
+                                                             jclass type,
+                                                             jboolean aec,
+                                                             jboolean ns) {
   SampleFormat sampleFormat;
   memset(&sampleFormat, 0, sizeof(sampleFormat));
   sampleFormat.pcmFormat_ = static_cast<uint16_t>(engine.bitsPerSample_);
@@ -154,13 +221,59 @@ Java_com_google_sample_echo_MainActivity_createAudioRecorder(JNIEnv *env,
   sampleFormat.channels_ = engine.sampleChannels_;
   sampleFormat.sampleRate_ = engine.fastPathSampleRate_;
   sampleFormat.framesPerBuf_ = engine.fastPathFramesPerBuf_;
-  engine.recorder_ = new AudioRecorder(&sampleFormat, engine.slEngineItf_);
+  engine.recorder_ = new AudioRecorder(&sampleFormat, engine.slEngineItf_, engine.slEngineObj_, (bool) aec, (bool) ns);
   if (!engine.recorder_) {
     return JNI_FALSE;
   }
+
+    LOGD("AUDIO-LOG-REC - REC BUFF QUEUE %d", engine.recBufQueue_->size());
+    LOGD("AUDIO-LOG-REC - FREE BUFF QUEUE %d", engine.freeBufQueue_->size());
+
   engine.recorder_->SetBufQueues(engine.freeBufQueue_, engine.recBufQueue_);
   engine.recorder_->RegisterCallback(EngineService, (void *)&engine);
   return JNI_TRUE;
+}
+
+JNIEXPORT jboolean JNICALL
+Java_com_google_sample_echo_MainActivity_isAecEnabled(JNIEnv *env,
+                                                   jclass type) {
+  return engine.recorder_ && engine.recorder_->isAecEnabled();
+}
+
+JNIEXPORT jboolean JNICALL
+Java_com_google_sample_echo_MainActivity_isNsEnabled(JNIEnv *env,
+                                                     jclass type) {
+  return engine.recorder_ && engine.recorder_->isNsEnabled();
+}
+
+JNIEXPORT jboolean JNICALL
+Java_com_google_sample_echo_MainActivity_isAecSupported(JNIEnv *env,
+                                                      jclass type) {
+    return engine.recorder_ && engine.recorder_->isAecSupported();
+}
+
+JNIEXPORT jboolean JNICALL
+Java_com_google_sample_echo_MainActivity_isNsSupported(JNIEnv *env,
+                                                     jclass type) {
+    return engine.recorder_ && engine.recorder_->isNsSupported();
+}
+
+JNIEXPORT void JNICALL
+Java_com_google_sample_echo_MainActivity_setAecEnabled(JNIEnv *env,
+                                                             jclass type, jboolean enable) {
+  bool enableAec = enable;
+  if (engine.recorder_) {
+      engine.recorder_->setAecEnabled(enableAec);
+  }
+}
+
+JNIEXPORT void JNICALL
+Java_com_google_sample_echo_MainActivity_setNsEnabled(JNIEnv *env,
+                                                   jclass type, jboolean enable) {
+  bool enableNs = enable;
+  if (engine.recorder_) {
+      engine.recorder_->setNsEnabled(enableNs);
+  }
 }
 
 JNIEXPORT void JNICALL
